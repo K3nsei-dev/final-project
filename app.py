@@ -10,7 +10,7 @@ from datetime import *
 
 class User(object):
     def __init__(self, user_id, email, password):
-        self.user_id = user_id
+        self.id = user_id
         self.email = email
         self.password = password
 
@@ -20,7 +20,7 @@ def create_user():
     conn = sqlite3.connect('twitter.db')
     print('Database Successfully Created')
 
-    conn.execute("CREATE TABLE IF NOT EXISTS users (user_id INTEGER PRIMARY KEY AUTOINCREMENT,"
+    conn.execute("CREATE TABLE IF NOT EXISTS users (  INTEGER PRIMARY KEY AUTOINCREMENT,"
                  "first_name TEXT NOT NULL,"
                  "last_name TEXT NOT NULL,"
                  "email TEXT NOT NULL,"
@@ -111,7 +111,7 @@ def fetch_users():
 users = fetch_users()
 
 username_table = {u.email: u for u in users}
-user_id_table = {u.user_id: u for u in users}
+user_id_table = {u.id: u for u in users}
 
 
 def authenticate(email, password):
@@ -174,7 +174,8 @@ def register():
         bio = request.json['bio']
         username = request.json['username']
 
-        if len(name) == 0 or len(surname) == 0 or len(email) == 0 or len(new_num) == 0 or len(new_id) == 0 or len(password) == 0 or pic == 0 or len(bio) == 0 or len(username) == 0:
+        if len(name) == 0 or len(surname) == 0 or len(email) == 0 or len(new_num) == 0 or len(new_id) == 0 or len(
+                password) == 0 or pic == 0 or len(bio) == 0 or len(username) == 0:
             raise Exception('Please ensure that each section is filled in correctly')
         elif type(name) == int or type(surname) == int or type(pic) == int:
             raise TypeError("Please Use The Correct Values for Each Section")
@@ -207,7 +208,8 @@ def register():
                            "password,"
                            "profile_pic,"
                            "bio,"
-                           "username) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (first_name, last_name, email, cell_num, id_num, password, pic, bio, username))
+                           "username) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                           (first_name, last_name, email, cell_num, id_num, password, pic, bio, username))
 
             conn.commit()
 
@@ -220,7 +222,23 @@ def register():
         return response
 
 
+@app.route('/user-profile/<int:user_id>')
+def get_user(user_id):
+    response = {}
 
+    with sqlite3.connect('twitter.db') as conn:
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT * FROM users WHERE user_id = ?", (user_id,))
+
+        users = cursor.fetchone()
+
+        conn.row_factory = users
+
+        response['results'] = users
+        response['message'] = "You Successfully Viewed The Profile"
+        response['status_code'] = 201
+    return response
 
 
 if __name__ == '__main__':
