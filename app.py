@@ -6,6 +6,7 @@ from flask_cors import CORS
 from flask_mail import Mail, Message
 import re
 from datetime import *
+import rsaidnumber
 
 
 class User(object):
@@ -20,7 +21,7 @@ def create_user():
     conn = sqlite3.connect('twitter.db')
     print('Database Successfully Created')
 
-    conn.execute("CREATE TABLE IF NOT EXISTS users (  INTEGER PRIMARY KEY AUTOINCREMENT,"
+    conn.execute("CREATE TABLE IF NOT EXISTS users (user_id INTEGER PRIMARY KEY AUTOINCREMENT,"
                  "first_name TEXT NOT NULL,"
                  "last_name TEXT NOT NULL,"
                  "email TEXT NOT NULL,"
@@ -40,7 +41,10 @@ def create_tweet():
 
     conn.execute("CREATE TABLE IF NOT EXISTS tweets (tweet_id INTEGER PRIMARY KEY AUTOINCREMENT,"
                  "description TEXT NOT NULL,"
-                 "image TEXT NOT NULL,"
+                 "image TEXT NULL,"
+                 "image2 TEXT NULL,"
+                 "image3 TEXT NULL,"
+                 "image4 TEXT NULL,"
                  "date TEXT NOT NULL,"
                  "FOREIGN KEY (tweet_id) REFERENCES users(user_id))")
     print("Tweets Table Successfully Created")
@@ -53,7 +57,7 @@ def create_comments():
 
     conn.execute("CREATE TABLE IF NOT EXISTS comments (comment_id INTEGER PRIMARY KEY AUTOINCREMENT,"
                  "description TEXT NOT NULL,"
-                 "image TEXT NOT NULL,"
+                 "image TEXT NULL,"
                  "date TEXT NOT NULL,"
                  "FOREIGN KEY (comment_id) REFERENCES tweets(tweet_id))")
     print("Comments Table Successfully Created")
@@ -65,8 +69,8 @@ def create_followers():
     conn = sqlite3.connect('twitter.db')
 
     conn.execute("CREATE TABLE IF NOT EXISTS followers (follow_id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                 "follow INTEGER NOT NULL,"
-                 "following INTEGER NOT NULL,"
+                 "follow INTEGER NULL,"
+                 "following INTEGER NULL,"
                  "FOREIGN KEY (follow_id) REFERENCES users(user_id))")
     print("Followers Table Created Successfully")
     conn.close()
@@ -131,8 +135,8 @@ app.config['SECRET_KEY'] = 'super-secret'
 # flask send email settings
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
-app.config['MAIL_USERNAME'] = 'lca.pointofsale@gmail.com'
-app.config['MAIL_PASSWORD'] = 'lifechoices2021'
+app.config['MAIL_USERNAME'] = 'bigbirdonline25@gmail.com'
+app.config['MAIL_PASSWORD'] = 'lifechoices1234'
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
 # date time variable
@@ -162,6 +166,8 @@ def register():
         raise Exception("Invalid Email Address, Please Try Again!")
 
     try:
+        rsa_id = rsaidnumber.parse(request.json['id_num'])
+        age = str((datetime.today() - rsa_id.date_of_birth) // timedelta(days=365.25))
         name = str(request.json['first_name'])
         surname = str(request.json['last_name'])
         email = request.json['email']
@@ -177,49 +183,81 @@ def register():
         if len(name) == 0 or len(surname) == 0 or len(email) == 0 or len(new_num) == 0 or len(new_id) == 0 or len(
                 password) == 0 or pic == 0 or len(bio) == 0 or len(username) == 0:
             raise Exception('Please ensure that each section is filled in correctly')
+        elif int(age) < 18:
+            raise Exception('You Are too Young to register. Please comeback when you are 18')
+        elif rsa_id.valid is False:
+            raise Exception('Please Enter A Valid ID Number')
         elif type(name) == int or type(surname) == int or type(pic) == int:
             raise TypeError("Please Use The Correct Values for Each Section")
         elif type(number) == str or type(id_num) == str:
             raise TypeError('Please Use The Correct Values for Each Section')
         else:
-            pass
+            if request.method == 'POST':
+                first_name = request.json['first_name']
+                last_name = request.json['last_name']
+                email = request.json['email']
+                cell_num = request.json['cell_num']
+                id_num = request.json['id_num']
+                password = request.json['password']
+                pic = request.json['profile_pic']
+                bio = request.json['bio']
+                username = request.json['username']
+
+                with sqlite3.connect('twitter.db') as conn:
+                    cursor = conn.cursor()
+
+                    cursor.execute("INSERT INTO users (first_name,"
+                                   "last_name,"
+                                   "email,"
+                                   "cell_num,"
+                                   "id_num,"
+                                   "password,"
+                                   "profile_pic,"
+                                   "bio,"
+                                   "username) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                                   (first_name, last_name, email, cell_num, id_num, password, pic, bio, username))
+
+                    conn.commit()
+
+                    # initialising flask mail
+                    mail = Mail(app)
+
+                    # content of the email
+                    msg = Message("User Registration Details", sender='bigbirdonline25@gmail.com', recipients=[email])
+                    msg.body = "Thank You For Registering With Big Bird Online!" + "\n" + "\n" + "Your Details " \
+                                                                                                 "Are As " \
+                                                                                                 "Follows:" + \
+                               "\n" + "\n" + "Username:" + " " + \
+                               email + "\n" + "Password:" + " " + password + "\n" + "\n" + "Thank You For Choosing Big Bird Online! Please " \
+                                                                                           "Enjoy The Experience! "
+
+                    # sending the email
+                    mail.send(msg)
+
+                    global users
+
+                    users = cursor.fetchall()
+
+                    response['message'] = "You Have Successfully Registered"
+                    response['status_code'] = 201
+                return response
     except ValueError:
-        raise Exception('Incorrect Type Used For A Section')
+        raise Exception('Form Filled in Incorrectly/Invalid ID Number')
 
-    if request.method == 'POST':
-        first_name = request.json['first_name']
-        last_name = request.json['last_name']
-        email = request.json['email']
-        cell_num = request.json['cell_num']
-        id_num = request.json['id_num']
-        password = request.json['password']
-        pic = request.json['profile_pic']
-        bio = request.json['bio']
-        username = request.json['username']
 
-        with sqlite3.connect('twitter.db') as conn:
-            cursor = conn.cursor()
+@app.route('/user-data/<email>')
+def get_data(email):
+    response = {}
 
-            cursor.execute("INSERT INTO users (first_name,"
-                           "last_name,"
-                           "email,"
-                           "cell_num,"
-                           "id_num,"
-                           "password,"
-                           "profile_pic,"
-                           "bio,"
-                           "username) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                           (first_name, last_name, email, cell_num, id_num, password, pic, bio, username))
+    with sqlite3.connect('products.db') as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT user_id FROM user WHERE email = ?", (email,))
+        users = cursor.fetchone()
 
-            conn.commit()
-
-            global users
-
-            users = cursor.fetchall()
-
-            response['message'] = "You Have Successfully Registered"
-            response['status_code'] = 201
-        return response
+        response['data'] = users
+        response['status_code'] = 200
+        response['message'] = "Successfully retrieved User ID"
+    return response
 
 
 @app.route('/user-profile/<int:user_id>')
@@ -229,16 +267,231 @@ def get_user(user_id):
     with sqlite3.connect('twitter.db') as conn:
         cursor = conn.cursor()
 
+        conn.row_factory = sqlite3.Row
+
         cursor.execute("SELECT * FROM users WHERE user_id = ?", (user_id,))
 
         users = cursor.fetchone()
-
-        conn.row_factory = users
 
         response['results'] = users
         response['message'] = "You Successfully Viewed The Profile"
         response['status_code'] = 201
     return response
+
+
+@app.route('/edit-user/<int:user_id>', methods=['PUT'])
+def edit_user(user_id):
+    response = {}
+
+    try:
+        name = str(request.json['first_name'])
+        surname = str(request.json['last_name'])
+        email = str(request.json['email'])
+        phone = str(request.json['cell_num'])
+        id_num = str(request.json['id_num'])
+        password = str(request.json['password'])
+        bio = str(request.json['bio'])
+        username = str(request.json['username'])
+
+        if len(name) == 0 and len(surname) == 0 and len(email) == 0 and len(phone) == 0 and len(id_num) == 0 and len(
+                password) == 0 and len(bio) == 0 and len(username) == 0:
+            raise Exception('Please Fill In At Least One Field')
+        elif type(name) == int and type(surname) == int and type(email) == int and type(phone) == int and type(
+                id_num) == int and type(password) == int and type(bio) == int and type(username) == int:
+            raise ValueError('Please Use The Correct Values for Each Section')
+        else:
+            if request.method == "PUT":
+                with sqlite3.connect('twitter.db') as conn:
+                    incoming_data = dict(request.json)
+                    new_data = {}
+
+                    if incoming_data.get('first_name') is not None:
+                        new_data['first_name'] = incoming_data.get('first_name')
+                        print(new_data, incoming_data)
+                        with sqlite3.connect('twitter.db') as conn:
+                            cursor = conn.cursor()
+                            cursor.execute("UPDATE users SET first_name = ? WHERE user_id=?",
+                                           (new_data['first_name'], user_id))
+                            conn.commit()
+
+                            response['message'] = "You successfully updated the user"
+                            response['status_code'] = 200
+
+                    if incoming_data.get('last_name') is not None:
+                        new_data['last_name'] = incoming_data.get('last_name')
+                        print(new_data, incoming_data)
+                        with sqlite3.connect('twitter.db') as conn:
+                            cursor = conn.cursor()
+                            cursor.execute("UPDATE users SET last_name =? WHERE user_id =?",
+                                           (new_data['last_name'], user_id))
+                            conn.commit()
+
+                            response['message'] = "You successfully updated the user"
+                            response['status_code'] = 200
+
+                    if incoming_data.get('email') is not None:
+                        new_data['email'] = incoming_data.get('email')
+                        print(new_data, incoming_data)
+                        with sqlite3.connect('twitter.db') as conn:
+                            cursor = conn.cursor()
+                            cursor.execute("UPDATE users SET email =? WHERE user_id =?", (new_data['email'], user_id))
+                            conn.commit()
+
+                            response['message'] = "You successfully updated the user"
+                            response['status_code'] = 200
+
+                    if incoming_data.get('cell_num') is not None:
+                        new_data['cell_num'] = incoming_data.get('cell_num')
+                        print(new_data, incoming_data)
+                        with sqlite3.connect('twitter.db') as conn:
+                            cursor = conn.cursor()
+                            cursor.execute("UPDATE users SET cell_num =? WHERE user_id =?",
+                                           (new_data['cell_num'], user_id))
+                            conn.commit()
+
+                            response['message'] = "You successfully updated the user"
+                            response['status_code'] = 200
+
+                    if incoming_data.get('password') is not None:
+                        new_data['password'] = incoming_data.get('password')
+                        print(new_data, incoming_data)
+                        with sqlite3.connect('twitter.db') as conn:
+                            cursor = conn.cursor()
+                            cursor.execute("UPDATE users SET password =? WHERE user_id =?",
+                                           (new_data['password'], user_id))
+                            conn.commit()
+
+                            response['message'] = "You successfully updated the user"
+                            response['status_code'] = 200
+
+                    if incoming_data.get('profile_pic') is not None:
+                        new_data['profile_pic'] = incoming_data.get('profile_pic')
+                        print(new_data, incoming_data)
+                        with sqlite3.connect('twitter.db') as conn:
+                            cursor = conn.cursor()
+                            cursor.execute("UPDATE users SET profile_pic =? WHERE user_id =?",
+                                           (new_data['profile_pic'], user_id))
+                            conn.commit()
+
+                            response['message'] = "You successfully updated the user"
+                            response['status_code'] = 200
+
+                    if incoming_data.get('bio') is not None:
+                        new_data['bio'] = incoming_data.get('bio')
+                        print(new_data, incoming_data)
+                        with sqlite3.connect('twitter.db') as conn:
+                            cursor = conn.cursor()
+                            cursor.execute("UPDATE users SET bio =? WHERE user_id =?",
+                                           (new_data['bio'], user_id))
+                            conn.commit()
+
+                            response['message'] = "You successfully updated the user"
+                            response['status_code'] = 200
+
+                    if incoming_data.get('username') is not None:
+                        new_data['username'] = incoming_data.get('username')
+                        print(new_data, incoming_data)
+                        with sqlite3.connect('twitter.db') as conn:
+                            cursor = conn.cursor()
+                            cursor.execute("UPDATE users SET username =? WHERE user_id =?",
+                                           (new_data['username'], user_id))
+                            conn.commit()
+
+                            response['message'] = "You successfully updated the user"
+                            response['status_code'] = 200
+                return response
+    except ValueError:
+        raise Exception('Please Fill in the form correctly')
+
+
+@app.route('/add-post/<int:user_id>', methods=['POST'])
+def add_post(user_id):
+    response = {}
+
+    if request.method == 'POST':
+        description = request.json['description']
+        image1 = request.json['image']
+        image2 = request.json['image2']
+        image3 = request.json['image3']
+        image4 = request.json['image4']
+        today = now
+
+        with sqlite3.connect('twitter.db') as conn:
+            cursor = conn.cursor()
+
+            cursor.execute("INSERT INTO tweets (description, image, image2, image3, image4, date) VALUES (?, ?, ?, ?, ?, ?)", (description, image1, image2, image3, image4, today))
+            conn.commit()
+
+            response['message'] = "You successfully added a post"
+            response['status_code'] = 201
+        return response
+
+
+@app.route('/view-posts/<int:user_id>')
+def view_posts(user_id):
+    response = {}
+
+    with sqlite3.connect('twitter.db') as conn:
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT * FROM tweets where user_id =?", (user_id,))
+
+        posts = cursor.fetchall()
+
+        response['results'] = posts
+        response['message'] = "You successfully views your posts"
+        response['status_code'] = 201
+    return response
+
+
+# @app.route('/follow/<int:user_id>/<int:follow_id>', methods=['POST'])
+# def follow(user_id, follow_id):
+#     response = {}
+#
+#     if request.method == 'POST':
+#         with sqlite3.connect('twitter.db') as conn:
+#             cursor = conn.cursor()
+#
+#             cursor.execute("INSERT INTO followers (follow) VALUES (?)", (follow_id,))
+#             conn.commit()
+#
+#             response['message'] = "You have successfully followed someone"
+#             response['status_code'] = 201
+#         return response
+#
+#
+# @app.route('/following/<int:user_id>')
+# def following(user_id, follow_id):
+#     response = {}
+#
+#     if request.method == 'GET':
+#         with sqlite3.connect('twitter.db') as conn:
+#             cursor = conn.cursor()
+#             cursor.execute("SELECT * FROM followers WHERE follow_id =?", (follow_id,))
+#
+#             # cursor.execute("SELECT * FROM users WHERE user_id =?", (follow_id,))
+#
+#             users = cursor.fetchall()
+#
+#             response['results'] = users
+#             response['message'] = "You Successfully Viewed The Profile"
+#             response['status_code'] = 201
+#         return response
+
+
+@app.route('/delete-user/<int:user_id>', methods=['POST'])
+def delete_user(user_id):
+    response = {}
+
+    if request.method == "POST":
+        with sqlite3.connect('twitter.db') as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM users WHERE user_id =?", (user_id,))
+            conn.commit()
+
+            response['message'] = "You successfully deleted the user"
+            response['status_code'] = 201
+        return response
 
 
 if __name__ == '__main__':
