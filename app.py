@@ -51,15 +51,17 @@ def create_user():
     print('Database Successfully Created')
 
     conn.execute("CREATE TABLE IF NOT EXISTS users (user_id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                 "first_name TEXT NOT NULL,"
-                 "last_name TEXT NOT NULL,"
-                 "email TEXT NOT NULL,"
-                 "cell_num TEXT NOT NULL,"
-                 "id_num TEXT NOT NULL,"
-                 "password TEXT NOT NULL,"
-                 "profile_pic TEXT NOT NULL,"
-                 "bio TEXT NOT NULL,"
-                 "username TEXT NOT NULL)")
+                 "first_name TEXT,"
+                 "last_name TEXT,"
+                 "email TEXT UNIQUE,"
+                 "cell_num TEXT,"
+                 "id_num TEXT,"
+                 "password TEXT,"
+                 "profile_pic TEXT,"
+                 "bio TEXT,"
+                 "username TEXT UNIQUE,"
+                 "following TEXT,"
+                 "follower TEXT)")
     print("User Table Created Successfully")
     conn.close()
 
@@ -86,22 +88,10 @@ def create_comments():
 
     conn.execute("CREATE TABLE IF NOT EXISTS comments (comment_id INTEGER PRIMARY KEY AUTOINCREMENT,"
                  "description TEXT NOT NULL,"
-                 "image TEXT NULL,"
+                 "image TEXT,"
                  "date TEXT NOT NULL,"
                  "FOREIGN KEY (comment_id) REFERENCES tweets(tweet_id))")
     print("Comments Table Successfully Created")
-    conn.close()
-
-
-# function that creates the followers table
-def create_followers():
-    conn = sqlite3.connect('twitter.db')
-
-    conn.execute("CREATE TABLE IF NOT EXISTS followers (follow_id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                 "follow INTEGER NULL,"
-                 "following INTEGER NULL,"
-                 "FOREIGN KEY (follow_id) REFERENCES users(user_id))")
-    print("Followers Table Created Successfully")
     conn.close()
 
 
@@ -122,7 +112,6 @@ def create_dm():
 create_user()
 create_tweet()
 create_comments()
-create_followers()
 create_dm()
 
 
@@ -622,43 +611,74 @@ def get_posts():
         response['results'] = posts
         response['message'] = "Viewed Post"
         response['status_code'] = 201
-
     return response
 
 
-# @app.route('/follow/<int:user_id>/<int:follow_id>', methods=['POST'])
-# def follow(user_id, follow_id):
-#     response = {}
-#
-#     if request.method == 'POST':
-#         with sqlite3.connect('twitter.db') as conn:
-#             cursor = conn.cursor()
-#
-#             cursor.execute("INSERT INTO followers (follow) VALUES (?)", (follow_id,))
-#             conn.commit()
-#
-#             response['message'] = "You have successfully followed someone"
-#             response['status_code'] = 201
-#         return response
-#
-#
-# @app.route('/following/<int:user_id>')
-# def following(user_id, follow_id):
-#     response = {}
-#
-#     if request.method == 'GET':
-#         with sqlite3.connect('twitter.db') as conn:
-#             cursor = conn.cursor()
-#             cursor.execute("SELECT * FROM followers WHERE follow_id =?", (follow_id,))
-#
-#             # cursor.execute("SELECT * FROM users WHERE user_id =?", (follow_id,))
-#
-#             users = cursor.fetchall()
-#
-#             response['results'] = users
-#             response['message'] = "You Successfully Viewed The Profile"
-#             response['status_code'] = 201
-#         return response
+@app.route('/user-profile/<int:user_id>/follow', methods=['PUT'])
+def follow(user_id):
+    response = {}
+
+    try:
+        new_follower = request.json['follower']
+        new_following = request.json['following']
+
+        if type(new_following) == int or type(new_follower) == int:
+            raise ValueError('Incorrect Value Used')
+
+        if request.method == 'PUT':
+
+            with sqlite3.connect('twitter.db') as conn:
+                cursor = conn.cursor()
+
+                cursor.execute("UPDATE users SET following =?, follower=? WHERE user_id = ?", (new_following, new_follower, user_id))
+                print(new_following, new_follower)
+                conn.commit()
+
+                response['message'] = "You have successfully followed someone"
+                response['status_code'] = 201
+            return response
+    except ValueError:
+        raise Exception('Data Not Being Stored Correctly')
+
+
+@app.route('/view-followers/<int:user_id>')
+def get_follower(user_id):
+    response = {}
+
+    if request.method == 'GET':
+        with sqlite3.connect('twitter.db') as conn:
+            cursor = conn.cursor()
+
+            conn.row_factory = sqlite3.Row
+
+            cursor.execute("SELECT follower FROM users WHERE user_id = ?", (user_id,))
+
+            users = cursor.fetchall()
+
+            response['results'] = users
+            response['message'] = "You Successfully Viewed The Profile"
+            response['status_code'] = 201
+        return response
+
+
+@app.route('/view-following/<int:user_id>')
+def get_following(user_id):
+    response = {}
+
+    if request.method == 'GET':
+        with sqlite3.connect('twitter.db') as conn:
+            cursor = conn.cursor()
+
+            conn.row_factory = sqlite3.Row
+
+            cursor.execute("SELECT following FROM users WHERE user_id=?", (user_id,))
+
+            found_users = cursor.fetchall()
+
+            response['results'] = found_users
+            response['message'] = "You Successfully Viewed The Profile"
+            response['status_code'] = 201
+        return response
 
 
 if __name__ == '__main__':
