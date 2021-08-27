@@ -45,6 +45,13 @@ class Posts(object):
         self.conn.commit()
 
 
+def dict_factory(cursor, row):
+    d = {}
+    for idx, col in enumerate(cursor.description):
+        d[col[0]] = row[idx]
+    return d
+
+
 # function that creates user table
 def create_user():
     conn = sqlite3.connect('twitter.db')
@@ -614,29 +621,49 @@ def get_posts():
     return response
 
 
-@app.route('/user-profile/<int:user_id>/follow', methods=['PUT'])
-def follow(user_id):
+@app.route('/user-profile/<int:user_id>/follow/<int:user_id2>', methods=['PATCH'])
+def follow(user_id, user_id2):
     response = {}
 
+    with sqlite3.connect('twitter.db') as conn:
+        conn.row_factory = dict_factory
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM users WHERE user_id =?", (user_id,))
+
+        results = cursor.fetchone()
+
     try:
-        new_follower = request.json['follower']
-        new_following = request.json['following']
-
-        if type(new_following) == int or type(new_follower) == int:
-            raise ValueError('Incorrect Value Used')
-
-        if request.method == 'PUT':
+        if results['following'] is not None:
+            following = list(map(int, results['following'].split()))
+            following.append(user_id)
+            converted_following = str(following)
 
             with sqlite3.connect('twitter.db') as conn:
+                conn.row_factory = dict_factory
                 cursor = conn.cursor()
 
-                cursor.execute("UPDATE users SET following =?, follower=? WHERE user_id = ?", (new_following, new_follower, user_id))
-                print(new_following, new_follower)
+                cursor.execute("UPDATE users SET following = ? WHERE user_id = ?", (converted_following, user_id,))
                 conn.commit()
 
                 response['message'] = "You have successfully followed someone"
                 response['status_code'] = 201
-            return response
+
+        if results['follower'] is not None:
+            followers = list(map(int, results['follower'].split()))
+            followers.append(user_id2)
+            converted_followers = str(followers)
+
+            with sqlite3.connect('twitter.db') as conn:
+                conn.row_factory = dict_factory
+                cursor = conn.cursor()
+
+                cursor.execute("UPDATE users SET follower = ? WHERE user_id = ?", (converted_followers, user_id2,))
+                conn.commit()
+
+                response['message'] = "successfully added user to followers"
+                response['status_code'] = 201
+
+        return response
     except ValueError:
         raise Exception('Data Not Being Stored Correctly')
 
