@@ -97,7 +97,6 @@ def create_comments():
                  "description TEXT,"
                  "image TEXT,"
                  "date TEXT NOT NULL,"
-                 "tweet_id NOT NULL"
                  "FOREIGN KEY (comment_id) REFERENCES tweets(tweet_id))")
     print("Comments Table Successfully Created")
     conn.close()
@@ -663,7 +662,7 @@ def add_comment(user_id, user_id2, tweet_id):
 
 
 @app.route('/get-comment/<int:user_id>/post/<int:user_id2>/comment/<int:tweet_id>')
-def get_comments(user_id, user_id2, tweet_id):
+def get_user_comments(user_id, user_id2, tweet_id):
     response = {}
 
     if request.method == 'GET':
@@ -714,7 +713,7 @@ def edit_comment(user_id, user_id2, tweet_id, comment_id):
         return response
 
 
-@app.route('/delete-comment/<int:user_id>/post/<int:user_id2/comment/<int:comment_id>', methods=['POST'])
+@app.route('/delete-comment/<int:user_id>/post/<int:user_id2>/comment/<int:comment_id>', methods=['POST'])
 def remove_comment(user_id, user_id2, comment_id):
     response = {}
 
