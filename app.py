@@ -641,8 +641,8 @@ def add_comment(user_id, user_id2, tweet_id):
                 new_data['description'] = incoming_data.get('description')
                 with sqlite3.connect('twitter.db') as conn:
                     cursor = conn.cursor()
-                    cursor.execute("INSERT INTO comments (description, tweet_id, date) VALUES (?, ?, ?)",
-                                   (new_data['description'], now, tweet_id))
+                    cursor.execute("INSERT INTO comments (description, date) VALUES (?, ?)",
+                                   (new_data['description'], now))
                     conn.commit()
 
                     response['message'] = "You successfully commented on a post"
@@ -669,9 +669,9 @@ def get_user_comments(user_id, user_id2, tweet_id):
         with sqlite3.connect('twitter.db') as conn:
             conn.row_factory = dict_factory
             cursor = conn.cursor()
-            cursor.execute('SELECT comments.*, tweets.* FROM comments AS tweets INNER JOIN comments as users WHERE '
-                           'tweet_id = ?', (tweet_id,))
-            comments = cursor.fetchall()
+            cursor.execute('SELECT comments.*, tweets.* FROM comments AS tweets INNER JOIN comments as comments WHERE '
+                           'comments.comment_id = ?', (tweet_id,))
+            comments = cursor.fetchone()
 
             response['results'] = comments
             response['message'] = "Successfully viewed comments"
@@ -744,89 +744,119 @@ def get_comments():
     return response
 
 
-@app.route('/user-profile/<int:user_id>/follow/<int:user_id2>', methods=['PATCH'])
-def follow(user_id, user_id2):
+@app.route('/user-profile/<int:user_id>/follow', methods=['PATCH'])
+def follow(user_id):
     response = {}
 
-    with sqlite3.connect('twitter.db') as conn:
-        conn.row_factory = dict_factory
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM users WHERE user_id =?", (user_id,))
+    if request.method == "PATCH":
+        following = request.json['following']
+        follower = request.json['follower']
 
-        results = cursor.fetchone()
+        with sqlite3.connect('twitter.db') as conn:
+            conn.row_factory = dict_factory
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM users WHERE user_id =?", (user_id,))
 
-    try:
+            results = cursor.fetchone()
+
         if results['following'] is not None:
-            following = list(map(int, results['following'].split()))
-            following.append(user_id)
-            converted_following = str(following)
-
             with sqlite3.connect('twitter.db') as conn:
                 conn.row_factory = dict_factory
                 cursor = conn.cursor()
 
-                cursor.execute("UPDATE users SET following = ? WHERE user_id = ?", (converted_following, user_id,))
+                cursor.execute("UPDATE users SET following = ? WHERE user_id = ?", (following, user_id,))
+                conn.commit()
+
+                response['message'] = "You have successfully followed someone"
+                response['status_code'] = 201
+        else:
+            with sqlite3.connect('twitter.db') as conn:
+                conn.row_factory = dict_factory
+                cursor = conn.cursor()
+
+                cursor.execute("UPDATE users SET following = ? WHERE user_id = ?", (following, user_id,))
                 conn.commit()
 
                 response['message'] = "You have successfully followed someone"
                 response['status_code'] = 201
 
         if results['follower'] is not None:
-            followers = list(map(int, results['follower'].split()))
-            followers.append(user_id2)
-            converted_followers = str(followers)
-
             with sqlite3.connect('twitter.db') as conn:
-                conn.row_factory = dict_factory
+                # conn.row_factory = dict_factory
                 cursor = conn.cursor()
 
-                cursor.execute("UPDATE users SET follower = ? WHERE user_id = ?", (converted_followers, user_id2,))
+                cursor.execute("UPDATE users SET follower = ? WHERE user_id = ?", (follower, following,))
+                conn.commit()
+
+                response['message'] = "successfully added user to followers"
+                response['status_code'] = 201
+        else:
+            with sqlite3.connect('twitter.db') as conn:
+                # conn.row_factory = dict_factory
+                cursor = conn.cursor()
+
+                cursor.execute("UPDATE users SET follower = ? WHERE user_id = ?", (follower, following,))
                 conn.commit()
 
                 response['message'] = "successfully added user to followers"
                 response['status_code'] = 201
         return response
-    except ValueError:
-        raise Exception('Data Not Being Stored Correctly')
 
 
 @app.route('/user-profile/<int:user_id>/unfollow/<int:user_id2>', methods=['PATCH'])
 def unfollow(user_id, user_id2):
     response = {}
 
-    with sqlite3.connect('twitter.db') as conn:
-        cursor = conn.cursor()
-
-        cursor.execute("SELECT * FROM users WHERE user_id = ?", (user_id,))
-        conn.commit()
-
-        results = cursor.fetchone()
-
-    if results['following'] is not None:
-        following = list(map(int, results['following'].split()))
-        following.remove(user_id)
-        converted_following = str(following)
+    if request.method == "PATCH":
+        following = request.json['following']
+        follower = request.json['follower']
 
         with sqlite3.connect('twitter.db') as conn:
             conn.row_factory = dict_factory
             cursor = conn.cursor()
 
-            cursor.execute("UPDATE users SET follower = ? WHERE user_id = ?", (converted_following, user_id,))
+            cursor.execute("SELECT * FROM users WHERE user_id = ?", (user_id,))
             conn.commit()
 
-            response['message'] = "You have successfully unfollowed someone"
-            response['status_code'] = 201
+            results = cursor.fetchone()
 
-        if results['follower'] is not None:
-            followers = list(map(int, results['follower'].split()))
-            followers.remove(user_id2)
-            converted_followers = str(followers)
-
+        if results['following'] is not None:
             with sqlite3.connect('twitter.db') as conn:
                 conn.row_factory = dict_factory
                 cursor = conn.cursor()
 
-                cursor.execute("UPDATE users SET follower = ? WHERE user_id = ?", (converted_followers, user_id2,))
+                cursor.execute("UPDATE users SET following = ? WHERE user_id = ?", (following, user_id))
+                conn.commit()
+
+                response['message'] = "You have successfully unfollowed someone"
+                response['status_code'] = 201
+        else:
+            with sqlite3.connect('twitter.db') as conn:
+                conn.row_factory = dict_factory
+                cursor = conn.cursor()
+
+                cursor.execute("UPDATE users SET following = ? WHERE user_id = ?", (following, user_id))
+                conn.commit()
+
+                response['message'] = "You have successfully unfollowed someone"
+                response['status_code'] = 201
+
+        if results['follower'] is not None:
+            with sqlite3.connect('twitter.db') as conn:
+                conn.row_factory = dict_factory
+                cursor = conn.cursor()
+
+                cursor.execute("UPDATE users SET follower = ? WHERE user_id = ?", (follower, user_id2))
+                conn.commit()
+
+                response['message'] = "successfully removed user from followers"
+                response['status_code'] = 201
+        else:
+            with sqlite3.connect('twitter.db') as conn:
+                conn.row_factory = dict_factory
+                cursor = conn.cursor()
+
+                cursor.execute("UPDATE users SET follower = ? WHERE user_id = ?", (follower, user_id2))
                 conn.commit()
 
                 response['message'] = "successfully removed user from followers"
@@ -871,6 +901,86 @@ def get_following(user_id):
             response['results'] = found_users
             response['message'] = "You Successfully Viewed The Profile"
             response['status_code'] = 201
+        return response
+
+
+@app.route('/view-retweets/<int:user_id>/retweets', methods=['POST'])
+def create_retweets(user_id):
+    response = {}
+
+    if request.method == 'POST':
+        with sqlite3.connect('twitter.db') as conn:
+            conn.row_factory = dict_factory
+            cursor = conn.cursor()
+
+            cursor.execute("SELECT * FROM tweets WHERE user_id = ?", (user_id,))
+
+            results = cursor.fetchone()
+
+            if results['retweeted_by'] is not None:
+                retweet = request.json['retweeted_by']
+                post_id = request.json['post_id']
+
+                with sqlite3.connect('twitter.db') as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("UPDATE tweets SET retweeted_by = ?,  post_id = ? WHERE user_id = ?",
+                                   (retweet, post_id, user_id))
+                    conn.commit()
+
+                    response['message'] = "You successfully retweeted the post"
+                    response['status_code'] = 201
+            else:
+                retweet = request.json['retweeted_by']
+                post_id = request.json['post_id']
+
+                with sqlite3.connect('twitter.db') as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("UPDATE tweets SET retweeted_by = ?,  post_id = ? WHERE user_id = ?",
+                                   (retweet, post_id, user_id))
+                    conn.commit()
+
+                    response['message'] = "You successfully retweeted the post"
+                    response['status_code'] = 201
+        return response
+
+
+@app.route('/view-likes/<int:user_id>/likes', methods=['POST'])
+def create_likes(user_id):
+    response = {}
+
+    if request.method == 'POST':
+        with sqlite3.connect('twitter.db') as conn:
+            conn.row_factory = dict_factory
+            cursor = conn.cursor()
+
+            cursor.execute("SELECT * FROM tweets WHERE user_id = ?", (user_id,))
+
+            results = cursor.fetchone()
+
+            if results['liked_by'] is not None:
+                retweet = request.json['liked_by']
+                post_id = request.json['like_post_id']
+
+                with sqlite3.connect('twitter.db') as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("UPDATE tweets SET liked_by = ?,  like_post_id = ? WHERE user_id = ?",
+                                   (retweet, post_id, user_id))
+                    conn.commit()
+
+                    response['message'] = "You successfully liked the post"
+                    response['status_code'] = 201
+            else:
+                retweet = request.json['liked_by']
+                post_id = request.json['like_post_id']
+
+                with sqlite3.connect('twitter.db') as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("UPDATE tweets SET retweeted_by = ?,  like_post_id = ? WHERE user_id = ?",
+                                   (retweet, post_id, user_id))
+                    conn.commit()
+
+                    response['message'] = "You successfully retweeted the post"
+                    response['status_code'] = 201
         return response
 
 
