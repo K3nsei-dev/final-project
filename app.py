@@ -83,6 +83,8 @@ def create_tweet():
                  "image_two TEXT,"
                  "image_three TEXT,"
                  "image_four TEXT,"
+                 "retweeted_by TEXT,"
+                 "liked_by TEXT,"
                  "date TEXT NOT NULL,"
                  "FOREIGN KEY (tweet_id) REFERENCES users(user_id))")
     print("Tweets Table Successfully Created")
@@ -447,66 +449,111 @@ def delete_user(user_id):
 def add_post(user_id):
     response = {}
 
-    if request.method == 'POST':
-        with sqlite3.connect('twitter.db') as conn:
-            incoming_data = dict(request.json)
-            new_data = {}
+    try:
+        if request.method == 'POST':
+            with sqlite3.connect('twitter.db') as conn:
+                incoming_data = dict(request.json)
+                new_data = {}
 
-            if incoming_data.get('description') is not None:
-                new_data['description'] = incoming_data.get('description')
-                print(new_data, incoming_data)
-                with sqlite3.connect('twitter.db') as conn:
-                    cursor = conn.cursor()
-                    cursor.execute("INSERT INTO tweets (description, date) VALUES (?, ?)",
-                                   (new_data['description'], now))
-                    conn.commit()
+                if incoming_data.get('description') is not None and incoming_data.get('image') is None and incoming_data.get('image_two') is None and incoming_data.get('image_three') is None and incoming_data.get('image_four') is None:
+                    new_data['description'] = incoming_data.get('description')
+                    print(new_data, incoming_data)
+                    with sqlite3.connect('twitter.db') as conn:
+                        cursor = conn.cursor()
+                        cursor.execute("INSERT INTO tweets (description, date) VALUES (?, ?)",
+                                       (new_data['description'], now))
+                        conn.commit()
 
-                    response['message'] = "You successfully added a post"
+                        response['message'] = "You successfully added a post"
+                        response['status_code'] = 201
+
+                elif incoming_data.get('description') is not None and incoming_data.get('image') is not None and incoming_data.get('image_two') is None and incoming_data.get('image_three') is None and incoming_data.get('image_four') is None:
+                    new_data['description'] = incoming_data.get('description')
+                    new_data['image'] = incoming_data.get('image')
+                    print(new_data, incoming_data)
+                    with sqlite3.connect('twitter.db') as conn:
+                        cursor = conn.cursor()
+                        cursor.execute("INSERT INTO tweets (description, image, date) VALUES (?, ?, ?)",
+                                       (new_data['description'], new_data['image'], now))
+                        conn.commit()
+
+                        response['message'] = "You successfully added a post"
+                        response['status_code'] = 201
+
+                elif incoming_data.get('description') is not None and incoming_data.get('image') is not None and incoming_data.get('image_two') is not None and incoming_data.get('image_three') is None and incoming_data.get('image_four') is None:
+                    new_data['description'] = incoming_data.get('description')
+                    new_data['image'] = incoming_data.get('image')
+                    new_data['image_two'] = incoming_data.get('image_two')
+                    print(new_data, incoming_data)
+                    with sqlite3.connect('twitter.db') as conn:
+                        cursor = conn.cursor()
+
+                        cursor.execute("INSERT INTO tweets (description, image, image_two, date) VALUES (?, ?, ?, ?)",
+                                       (new_data['description'], new_data['image'], new_data['image_two'], now))
+                        conn.commit()
+
+                        response['message'] = "You successfully added a post"
+                        response['status_code'] = 201
+
+                elif incoming_data.get('description') is not None and incoming_data.get('image') is not None and incoming_data.get('image_two') is not None and incoming_data.get('image_three') is not None and incoming_data.get('image_four') is None:
+                    new_data['description'] = incoming_data.get('description')
+                    new_data['image'] = incoming_data.get('image')
+                    new_data['image_two'] = incoming_data.get('image_two')
+                    new_data['image_three'] = incoming_data.get('image_three')
+                    print(new_data, incoming_data)
+                    with sqlite3.connect('twitter.db') as conn:
+                        cursor = conn.cursor()
+
+                        cursor.execute("INSERT INTO tweets (description, image, image_two, image_three, date) VALUES "
+                                       "(?, ?, ?, ?, ?)",
+                                       (new_data['description'], new_data['image'], new_data['image_two'],
+                                        new_data['image_three'], now))
+                        conn.commit()
+
+                        response['message'] = "You successfully added a post"
+                        response['status_code'] = 201
+
+                elif incoming_data.get('description') is not None and incoming_data.get('image') is not None and incoming_data.get('image_two') is not None and incoming_data.get('image_three') is not None and incoming_data.get('image_four') is not None:
+                    new_data['description'] = incoming_data.get('description')
+                    new_data['image'] = incoming_data.get('image')
+                    new_data['image_two'] = incoming_data.get('image_two')
+                    new_data['image_three'] = incoming_data.get('image_three')
+                    new_data['image_four'] = incoming_data.get('image_four')
+                    print(new_data, incoming_data)
+                    with sqlite3.connect('twitter.db') as conn:
+                        cursor = conn.cursor()
+
+                        cursor.execute("INSERT INTO tweets (description, image, image_two, image_three, image_four, "
+                                       "date) VALUES (?, ?, ?, ?, ?, ?)",
+                                       (new_data['description'], new_data['image'], new_data['image_two'],
+                                        new_data['image_three'], new_data['image_four'], now))
+                        conn.commit()
+
+                        response['message'] = "Successfully added a post"
+                        response['status_code'] = 201
+
+                elif incoming_data.get('description') is None:
+                    new_data['image'] = incoming_data.get('image')
+                    new_data['image_two'] = incoming_data.get('image_two')
+                    new_data['image_three'] = incoming_data.get('image_three')
+                    new_data['image_four'] = incoming_data.get('image_four')
+                    print(new_data, incoming_data)
+                    with sqlite3.connect('twitter.db') as conn:
+                        cursor = conn.cursor()
+                        cursor.execute("INSERT INTO tweets (image, image_two, image_three, image_four, "
+                                       "date) VALUES (?, ?, ?, ?, ?)", (
+                                           new_data['image'], new_data['image_two'], new_data['image_three'],
+                                           new_data['image_four'], now))
+                        conn.commit()
+
+                        response['message'] = "You successfully added a post"
+                        response['status_code'] = 201
+                else:
+                    response['message'] = "You need at to have at least an image or description"
                     response['status_code'] = 201
-
-            if incoming_data.get('image') is not None:
-                new_data['image'] = incoming_data.get('image')
-                print(new_data, incoming_data)
-                with sqlite3.connect('twitter.db') as conn:
-                    cursor = conn.cursor()
-                    cursor.execute("INSERT INTO tweets (image, date) VALUES (?, ?)", (new_data['image'], now))
-                    conn.commit()
-
-            if incoming_data.get('image_two') is not None:
-                print(new_data, incoming_data)
-                with sqlite3.connect('twitter.db') as conn:
-                    cursor = conn.cursor()
-
-                    cursor.execute("INSERT INTO tweets (image_two, date) VALUES (?, ?)", (new_data['image_two'], now))
-                    conn.commit()
-
-            if incoming_data.get('image_three') is not None:
-                print(new_data, incoming_data)
-                with sqlite3.connect('twitter.db') as conn:
-                    cursor = conn.cursor()
-
-                    cursor.execute("INSERT INTO tweets (image_three, date) VALUES (?, ?)",
-                                   (new_data['image_three'], now))
-                    conn.commit()
-
-            if incoming_data.get('image_three') is not None:
-                print(new_data, incoming_data)
-                with sqlite3.connect('twitter.db') as conn:
-                    cursor = conn.cursor()
-
-                    cursor.execute("INSERT INTO tweets (image_three, date) VALUES (?, ?)",
-                                   (new_data['image_three'], now))
-                    conn.commit()
-
-            if incoming_data.get('image_three') is not None:
-                print(new_data, incoming_data)
-                with sqlite3.connect('twitter.db') as conn:
-                    cursor = conn.cursor()
-
-                    cursor.execute("INSERT INTO tweets (image_three, date) VALUES (?, ?)",
-                                   (new_data['image_three'], now))
-                    conn.commit()
-        return response
+            return response
+    except ValueError:
+        raise Exception('Form not filled in correctly')
 
 
 @app.route('/edit-post/<int:user_id>/<int:tweet_id>', methods=['PUT'])
@@ -558,7 +605,7 @@ def edit_post(user_id, tweet_id):
                 print(new_data, incoming_data)
                 with sqlite3.connect('twitter.db') as conn:
                     cursor = conn.cursor()
-                    cursor.execute("UPDATE tweets SET image_three =? WHERE  tweet_id =?",
+                    cursor.execute("UPDATE tweets SET image_three =? WHERE tweet_id =?",
                                    (new_data['image_three'], tweet_id))
                     conn.commit()
 
@@ -596,19 +643,21 @@ def delete_post(user_id, tweet_id):
 @app.route('/user-posts/<int:user_id>')  # viewing user specific tweets
 def view_posts(user_id):
     response = {}
+    try:
+        with sqlite3.connect('twitter.db') as conn:
+            conn.row_factory = dict_factory
+            cursor = conn.cursor()
 
-    with sqlite3.connect('twitter.db') as conn:
-        conn.row_factory = dict_factory
-        cursor = conn.cursor()
+            cursor.execute("SELECT a.*, b.first_name FROM tweets AS a INNER JOIN users as b WHERE user_id = ?", (user_id,))
 
-        cursor.execute("SELECT tweets.*, first_name FROM tweets AS tweets INNER JOIN users as users WHERE user_id = ?",
-                       (user_id,))
+            posts = cursor.fetchall()
 
-        posts = cursor.fetchall()
-
-        response['results'] = posts
-        response['message'] = "You successfully views your posts"
-        response['status_code'] = 201
+            response['results'] = posts
+            response['message'] = "You successfully views your posts"
+            response['status_code'] = 201
+    except ValueError:
+        response["status_code"] = 404
+        response["message"] = "Unable to fetch posts"
     return response
 
 
@@ -905,7 +954,7 @@ def get_following(user_id):
 
 
 @app.route('/view-retweets/<int:user_id>/retweets', methods=['POST'])
-def create_retweets(user_id):
+def create_retweets(user_id, tweet_id):
     response = {}
 
     if request.method == 'POST':
@@ -923,8 +972,8 @@ def create_retweets(user_id):
 
                 with sqlite3.connect('twitter.db') as conn:
                     cursor = conn.cursor()
-                    cursor.execute("UPDATE tweets SET retweeted_by = ?,  post_id = ? WHERE user_id = ?",
-                                   (retweet, post_id, user_id))
+                    cursor.execute("UPDATE tweets SET retweeted_by = ?,  post_id = ? WHERE tweet_id = ?",
+                                   (retweet, post_id, tweet_id))
                     conn.commit()
 
                     response['message'] = "You successfully retweeted the post"
@@ -935,8 +984,8 @@ def create_retweets(user_id):
 
                 with sqlite3.connect('twitter.db') as conn:
                     cursor = conn.cursor()
-                    cursor.execute("UPDATE tweets SET retweeted_by = ?,  post_id = ? WHERE user_id = ?",
-                                   (retweet, post_id, user_id))
+                    cursor.execute("UPDATE tweets SET retweeted_by = ?,  post_id = ? WHERE tweet_id = ?",
+                                   (retweet, post_id, tweet_id))
                     conn.commit()
 
                     response['message'] = "You successfully retweeted the post"
@@ -945,7 +994,7 @@ def create_retweets(user_id):
 
 
 @app.route('/view-likes/<int:user_id>/likes', methods=['POST'])
-def create_likes(user_id):
+def create_likes(user_id, tweet_id):
     response = {}
 
     if request.method == 'POST':
@@ -963,8 +1012,8 @@ def create_likes(user_id):
 
                 with sqlite3.connect('twitter.db') as conn:
                     cursor = conn.cursor()
-                    cursor.execute("UPDATE tweets SET liked_by = ?,  like_post_id = ? WHERE user_id = ?",
-                                   (retweet, post_id, user_id))
+                    cursor.execute("UPDATE tweets SET liked_by = ?,  like_post_id = ? WHERE tweet_id = ?",
+                                   (retweet, post_id, tweet_id))
                     conn.commit()
 
                     response['message'] = "You successfully liked the post"
@@ -975,11 +1024,11 @@ def create_likes(user_id):
 
                 with sqlite3.connect('twitter.db') as conn:
                     cursor = conn.cursor()
-                    cursor.execute("UPDATE tweets SET retweeted_by = ?,  like_post_id = ? WHERE user_id = ?",
-                                   (retweet, post_id, user_id))
+                    cursor.execute("UPDATE tweets SET retweeted_by = ?,  like_post_id = ? WHERE tweet_id = ?",
+                                   (retweet, post_id, tweet_id))
                     conn.commit()
 
-                    response['message'] = "You successfully retweeted the post"
+                    response['message'] = "You successfully liked the post"
                     response['status_code'] = 201
         return response
 
