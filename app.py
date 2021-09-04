@@ -251,7 +251,7 @@ def register():
 
                     global users
 
-                    users = cursor.fetchall()
+                    users = fetch_users()
 
                     # initialising flask mail
                     mail = Mail(app)
