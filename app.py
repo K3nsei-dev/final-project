@@ -280,9 +280,9 @@ def register():
 def get_data(email):
     response = {}
 
-    with sqlite3.connect('products.db') as conn:
+    with sqlite3.connect('twitter.db') as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT user_id FROM user WHERE email = ?", (email,))
+        cursor.execute("SELECT user_id FROM users WHERE email = ?", (email,))
         users = cursor.fetchone()
 
         response['data'] = users
