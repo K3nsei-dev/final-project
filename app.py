@@ -309,6 +309,24 @@ def get_user(user_id):
     return response
 
 
+@app.route('/all-users')
+def all_users():
+    response = {}
+
+    with sqlite3.connect('twitter.db') as conn:
+        conn.row_factory = dict_factory
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT * FROM users")
+
+        users = cursor.fetchall()
+
+        response['results'] = users
+        response['message'] = "Successfully retrieved all users"
+        response['status_code'] = 201
+    return response
+
+
 @app.route('/edit-user/<int:user_id>', methods=['PUT'])
 def edit_user(user_id):
     response = {}
