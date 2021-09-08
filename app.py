@@ -309,6 +309,24 @@ def get_user(user_id):
     return response
 
 
+@app.route('/search-profile/<username>')
+def search_profile(username):
+    response = {}
+
+    with sqlite3.connect('twitter.db') as conn:
+        conn.row_factory = dict_factory
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
+
+        users = cursor.fetchone()
+
+        response['results'] = users
+        response['message'] = "Successfully got user"
+        response['status_code'] = 201
+    return response
+
+
 @app.route('/all-users/<int:user_id>')
 def all_users(user_id):
     response = {}
@@ -756,7 +774,9 @@ def get_user_comments(user_id, user_id2, tweet_id):
         with sqlite3.connect('twitter.db') as conn:
             conn.row_factory = dict_factory
             cursor = conn.cursor()
-            cursor.execute('SELECT comments.*, tweets.* FROM comments AS tweets INNER JOIN comments as comments WHERE tweets.tweet_id = ?', (tweet_id,))
+            cursor.execute(
+                'SELECT comments.*, tweets.* FROM comments AS tweets INNER JOIN comments as comments WHERE tweets.tweet_id = ?',
+                (tweet_id,))
             comments = cursor.fetchone()
 
             response['results'] = comments
