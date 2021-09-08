@@ -674,7 +674,7 @@ def view_posts(user_id):
             conn.row_factory = dict_factory
             cursor = conn.cursor()
 
-            cursor.execute("SELECT a.*, b.first_name FROM tweets AS a INNER JOIN users as b ON a.user_id = b.user_id "
+            cursor.execute("SELECT a.*, b.* FROM tweets AS a INNER JOIN users as b ON a.user_id = b.user_id "
                            "WHERE a.user_id = ?", (user_id,))
 
             posts = cursor.fetchall()
