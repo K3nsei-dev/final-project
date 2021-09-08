@@ -309,15 +309,15 @@ def get_user(user_id):
     return response
 
 
-@app.route('/all-users')
-def all_users():
+@app.route('/all-users/<int:user_id>')
+def all_users(user_id):
     response = {}
 
     with sqlite3.connect('twitter.db') as conn:
         conn.row_factory = dict_factory
         cursor = conn.cursor()
 
-        cursor.execute("SELECT * FROM users")
+        cursor.execute("SELECT * FROM users WHERE user_id != ?", (user_id,))
 
         users = cursor.fetchall()
 
