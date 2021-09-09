@@ -247,7 +247,6 @@ def register():
                     global users
 
                     users = fetch_users()
-                    import pdb;pdb.set_trace() # Let's have a smoke break???? haha yes XD. We meet at 15h20? perfect!. Cool.
 
                     # initialising flask mail
                     mail = Mail(app)
@@ -714,19 +713,19 @@ def get_posts(user_id):
 
         data = posts
 
-        if not data['following']:
-            if not data['following']:
+        if not data:
+            if not data:
                 cursor.execute("SELECT * FROM users INNER JOIN tweets ON tweets.user_id = users.user_id"
                                " WHERE tweets.user_id='" + str(data['following'])
                                + "' OR tweets.user_id='" + str(user_id) + "'")
                 return cursor.fetchall()
-        elif len(data['following']) == 1:
+        elif len(data[9]) == 1:
             cursor.execute("SELECT * FROM users INNER JOIN tweets ON tweets.user_id = users.user_id"
                            " WHERE tweets.user_id='" + str(data['following'])
                            + "' OR tweets.user_id='" + str(user_id) + "'")
             return cursor.fetchall()
         else:
-            convert_array = tuple(map(int, data['following'][1:len(data['following']) - 1].split(",")))
+            convert_array = tuple(map(int, data[9][1:len(data[9]) - 1].split(",")))
             print(convert_array)
             cursor.execute("SELECT * FROM user INNER JOIN tweets ON tweets.user_id = user.user_id"
                            " WHERE tweets.user_id IN " + str(convert_array) + "")
