@@ -279,7 +279,7 @@ def get_data(email):
         cursor.execute("SELECT user_id FROM users WHERE email = ?", (email,))
         users = cursor.fetchone()
 
-        response['data'] = users
+        response['results'] = users
         response['status_code'] = 200
         response['message'] = "Successfully retrieved User ID"
     return response
