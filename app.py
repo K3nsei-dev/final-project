@@ -722,8 +722,8 @@ def get_posts():
     return response
 
 
-@app.route('/add-comment/<int:user_id>/post/<int:user_id2>/comment/<int:tweet_id>', methods=['POST'])
-def add_comment(user_id, user_id2, tweet_id):
+@app.route('/add-comment/post/comment/<int:tweet_id>', methods=['POST'])
+def add_comment(tweet_id):
     response = {}
 
     if request.method == 'POST':
@@ -766,8 +766,8 @@ def add_comment(user_id, user_id2, tweet_id):
         return response
 
 
-@app.route('/get-comment/<int:user_id>/post/<int:user_id2>/comment/<int:tweet_id>')
-def get_user_comments(user_id, user_id2, tweet_id):
+@app.route('/get-comment/post/comment/<int:tweet_id>')
+def get_user_comments(tweet_id):
     response = {}
 
     if request.method == 'GET':
@@ -775,8 +775,7 @@ def get_user_comments(user_id, user_id2, tweet_id):
             conn.row_factory = dict_factory
             cursor = conn.cursor()
             cursor.execute(
-                'SELECT comments.*, tweets.* FROM comments AS tweets INNER JOIN comments as comments WHERE tweets.tweet_id = ?',
-                (tweet_id,))
+                'SELECT comments.*, tweets.* FROM comments AS tweets INNER JOIN comments as comments WHERE tweets.tweet_id = comments.comment_id')
             comments = cursor.fetchone()
 
             response['results'] = comments
@@ -846,6 +845,42 @@ def get_comments():
 
         response['results'] = comments
         response['message'] = "Successfully retrieved all the comments"
+        response['status_code'] = 201
+    return response
+
+
+@app.route('/get-following/<int:user_id>')
+def get_following(user_id):
+    response = {}
+
+    with sqlite3.connect('twitter.db') as conn:
+        conn.row_factory = dict_factory
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT following FROM users WHERE user_id =?", (user_id,))
+
+        results = cursor.fetchone()
+
+        response['results'] = results
+        response['message'] = "Successfully got following"
+        response['status_code'] = 201
+    return response
+
+
+@app.route('/get-followers/<int:user_id>')
+def get_followers(user_id):
+    response = {}
+
+    with sqlite3.connect('twitter.db') as conn:
+        conn.row_factory = dict_factory
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT followers FROM users WHERE user_id =?", (user_id,))
+
+        results = cursor.fetchone()
+
+        response['results'] = results
+        response['message'] = "You got all the followers"
         response['status_code'] = 201
     return response
 
