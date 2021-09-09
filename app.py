@@ -850,7 +850,7 @@ def get_comments():
 
 
 @app.route('/get-following/<int:user_id>')
-def get_following(user_id):
+def see_following(user_id):
     response = {}
 
     with sqlite3.connect('twitter.db') as conn:
@@ -868,7 +868,7 @@ def get_following(user_id):
 
 
 @app.route('/get-followers/<int:user_id>')
-def get_followers(user_id):
+def see_followers(user_id):
     response = {}
 
     with sqlite3.connect('twitter.db') as conn:
