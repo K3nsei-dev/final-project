@@ -247,6 +247,7 @@ def register():
                     global users
 
                     users = fetch_users()
+                    import pdb;pdb.set_trace() # Let's have a smoke break???? haha yes XD. We meet at 15h20? perfect!. Cool.
 
                     # initialising flask mail
                     mail = Mail(app)
@@ -701,7 +702,7 @@ def view_posts(user_id):
     return response
 
 
-@app.route('/all-posts')  # viewing all the posts made by everyone
+@app.route('/all-posts/<int:user_id>')  # viewing all the posts made by everyone
 def get_posts(user_id):
     response = {}
 
