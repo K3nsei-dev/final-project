@@ -1,7 +1,7 @@
 import sqlite3
 import hmac
 from flask import Flask, request
-from flask_jwt import JWT, jwt_required, current_identity
+from flask_jwt import JWT
 from flask_cors import CORS
 from flask_mail import Mail, Message
 import re
@@ -13,6 +13,7 @@ class User(object):
     def __init__(self, user_id, email, password):
         self.id = user_id
         self.email = email
+        self.username = email
         self.password = password
 
 
@@ -148,8 +149,8 @@ username_table = {u.email: u for u in users}
 user_id_table = {u.id: u for u in users}
 
 
-def authenticate(email, password):
-    user = username_table.get(email, None)
+def authenticate(username, password):
+    user = username_table.get(username, None)
     if user and hmac.compare_digest(user.password.encode('utf-8'), password.encode('utf-8')):
         return user
 
@@ -161,7 +162,7 @@ def identity(number):
 
 app = Flask(__name__)
 CORS(app)
-app.config['SECRET_KEY'] = 'super-secret'
+app.config['SECRET_KEY'] = 'YR2Q2z04xV6ejy2W9wMG0A'
 # flask send email settings
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
@@ -173,12 +174,6 @@ app.config['MAIL_USE_SSL'] = True
 now = datetime.now()
 
 jwt = JWT(app, authenticate, identity)
-
-
-@app.route('/protected')
-@jwt_required()
-def protected():
-    return '%s' % current_identity
 
 
 @app.route('/register', methods=['POST'])
@@ -707,16 +702,36 @@ def view_posts(user_id):
 
 
 @app.route('/all-posts')  # viewing all the posts made by everyone
-def get_posts():
+def get_posts(user_id):
     response = {}
 
     with sqlite3.connect('twitter.db') as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM tweets")
+        cursor.execute("SELECT following FROM users WHERE user_id = ?", (user_id,))
 
-        posts = cursor.fetchall()
+        posts = cursor.fetchone()
 
-        response['results'] = posts
+        data = posts
+
+        if not data['following']:
+            if not data['following']:
+                cursor.execute("SELECT * FROM users INNER JOIN tweets ON tweets.user_id = users.user_id"
+                               " WHERE tweets.user_id='" + str(data['following'])
+                               + "' OR tweets.user_id='" + str(user_id) + "'")
+                return cursor.fetchall()
+        elif len(data['following']) == 1:
+            cursor.execute("SELECT * FROM users INNER JOIN tweets ON tweets.user_id = users.user_id"
+                           " WHERE tweets.user_id='" + str(data['following'])
+                           + "' OR tweets.user_id='" + str(user_id) + "'")
+            return cursor.fetchall()
+        else:
+            convert_array = tuple(map(int, data['following'][1:len(data['following']) - 1].split(",")))
+            print(convert_array)
+            cursor.execute("SELECT * FROM user INNER JOIN tweets ON tweets.user_id = user.user_id"
+                           " WHERE tweets.user_id IN " + str(convert_array) + "")
+            return cursor.fetchall()
+
+        response['results'] = data
         response['message'] = "Viewed Post"
         response['status_code'] = 201
     return response
