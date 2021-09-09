@@ -701,7 +701,7 @@ def view_posts(user_id):
     return response
 
 
-@app.route('/all-posts/<int:user_id>')  # viewing all the posts made by everyone
+@app.route('/all-posts/<int:user_id>', methods=['GET'])  # viewing all the posts made by everyone
 def get_posts(user_id):
     response = {}
 
@@ -716,16 +716,16 @@ def get_posts(user_id):
         if not data:
             if not data:
                 cursor.execute("SELECT * FROM users INNER JOIN tweets ON tweets.user_id = users.user_id"
-                               " WHERE tweets.user_id='" + str(data['following'])
+                               " WHERE tweets.user_id='" + str(data)
                                + "' OR tweets.user_id='" + str(user_id) + "'")
                 return cursor.fetchall()
         elif len(data[9]) == 1:
             cursor.execute("SELECT * FROM users INNER JOIN tweets ON tweets.user_id = users.user_id"
-                           " WHERE tweets.user_id='" + str(data['following'])
+                           " WHERE tweets.user_id='" + str(data)
                            + "' OR tweets.user_id='" + str(user_id) + "'")
             return cursor.fetchall()
         else:
-            convert_array = tuple(map(int, data[9][1:len(data[9]) - 1].split(",")))
+            convert_array = tuple(map(int, data[1:len(data) - 1].split(",")))
             print(convert_array)
             cursor.execute("SELECT * FROM user INNER JOIN tweets ON tweets.user_id = user.user_id"
                            " WHERE tweets.user_id IN " + str(convert_array) + "")
