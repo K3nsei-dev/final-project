@@ -141,10 +141,11 @@ def user_login():
             if user is not None:
                 response['message'] = "You have logged in"
                 response['status_code'] = 200
+                return response
             else:
                 response['message'] = "User not found"
                 response['status_code'] = 404
-        return response
+                return response
 
 
 @app.route('/register', methods=['POST'])
