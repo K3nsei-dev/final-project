@@ -130,8 +130,8 @@ def user_login():
     response = {}
     try:
         if request.method == 'POST':
-            email = request.json["email"]
-            password = request.json["password"]
+            email = request.json['email']
+            password = request.json['password']
 
             with sqlite3.connect("twitter.db") as conn:
                 conn.row_factory = dict_factory
