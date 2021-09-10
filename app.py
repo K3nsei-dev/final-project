@@ -8,7 +8,6 @@ import re
 from datetime import *
 import rsaidnumber
 
-
 class User(object):
     def __init__(self, user_id, email, password):
         self.id = user_id
@@ -281,7 +280,11 @@ def get_data(email):
         cursor.execute("SELECT user_id FROM users WHERE email = ?", (email,))
         user = cursor.fetchone()
 
+<<<<<<< HEAD
         response['results'] = user
+=======
+        response['results'] = users
+>>>>>>> 97b7305579e54afd9f5418f877c3b134e840649c
         response['status_code'] = 200
         response['message'] = "Successfully retrieved User ID"
     return response
@@ -707,32 +710,31 @@ def get_posts(user_id):
     response = {}
 
     with sqlite3.connect('twitter.db') as conn:
+        conn.row_factory = dict_factory
         cursor = conn.cursor()
         cursor.execute("SELECT following FROM users WHERE user_id = ?", (user_id,))
 
         posts = cursor.fetchone()
 
-        data = posts
-
-        if not data:
-            if not data:
+        if not posts['following']:
+            if not posts['following']:
                 cursor.execute("SELECT * FROM users INNER JOIN tweets ON tweets.user_id = users.user_id"
-                               " WHERE tweets.user_id='" + str(data)
+                               " WHERE tweets.user_id='" + str(posts['following'])
                                + "' OR tweets.user_id='" + str(user_id) + "'")
-                return cursor.fetchall()
-        elif len(data[9]) == 1:
+                return str(cursor.fetchall())
+        elif len(posts['following']) == 1:
             cursor.execute("SELECT * FROM users INNER JOIN tweets ON tweets.user_id = users.user_id"
-                           " WHERE tweets.user_id='" + str(data)
+                           " WHERE tweets.user_id='" + str(posts['following'])
                            + "' OR tweets.user_id='" + str(user_id) + "'")
-            return cursor.fetchall()
+            return str(cursor.fetchall())
         else:
-            convert_array = tuple(map(int, data[1:len(data) - 1].split(",")))
+            convert_array = tuple(map(int, posts[1:len(posts['following']) - 1].split(",")))
             print(convert_array)
             cursor.execute("SELECT * FROM user INNER JOIN tweets ON tweets.user_id = user.user_id"
                            " WHERE tweets.user_id IN " + str(convert_array) + "")
-            return cursor.fetchall()
+            return str(cursor.fetchall())
 
-        response['results'] = data
+        response['results'] = posts
         response['message'] = "Viewed Post"
         response['status_code'] = 201
     return response
@@ -791,7 +793,7 @@ def get_user_comments(tweet_id):
             conn.row_factory = dict_factory
             cursor = conn.cursor()
             cursor.execute(
-                'SELECT comments.*, tweets.* FROM comments AS tweets INNER JOIN comments as comments WHERE tweets.tweet_id = comments.comment_id')
+                'SELECT comments.*, tweets.* FROM comments AS comments INNER JOIN tweets as tweets WHERE comments.tweet_id = comments.comment_id')
             comments = cursor.fetchone()
 
             response['results'] = comments
