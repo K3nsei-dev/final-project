@@ -125,7 +125,7 @@ app.config['MAIL_USE_SSL'] = True
 now = datetime.now()
 
 
-@app.route('/user-login')
+@app.route('/user-login', methods=['POST'])
 def user_login():
     response = {}
 
