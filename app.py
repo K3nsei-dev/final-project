@@ -276,11 +276,12 @@ def get_data(email):
     response = {}
 
     with sqlite3.connect('twitter.db') as conn:
+        conn.row_factory = dict_factory
         cursor = conn.cursor()
         cursor.execute("SELECT user_id FROM users WHERE email = ?", (email,))
-        users = cursor.fetchone()
+        user = cursor.fetchone()
 
-        response['data'] = users
+        response['results'] = user
         response['status_code'] = 200
         response['message'] = "Successfully retrieved User ID"
     return response
