@@ -1,7 +1,5 @@
 import sqlite3
-import hmac
 from flask import Flask, request
-from flask_jwt import JWT
 from flask_cors import CORS
 from flask_mail import Mail, Message
 import re
@@ -107,57 +105,10 @@ def create_comments():
     conn.close()
 
 
-# function that creates the direct message table
-def create_dm():
-    conn = sqlite3.connect('twitter.db')
-
-    conn.execute("CREATE TABLE IF NOT EXISTS messages (direct_id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                 "user_id TEXT NOT NULL,"
-                 "sent TEXT NOT NULL,"
-                 "received TEXT NOT NULL,"
-                 "date TEXT NOT NULL,"
-                 "FOREIGN KEY (user_id) REFERENCES users(user_id))")
-    print("Direct Messages Table Created Successfully")
-    conn.close()
-
-
 # calling functions
 create_user()
 create_tweet()
 create_comments()
-create_dm()
-
-
-# # calling data from users table
-def fetch_users():
-    with sqlite3.connect('twitter.db') as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM users")
-        users = cursor.fetchall()
-
-        new_data = []
-
-        for data in users:
-            new_data.append(User(data[0], data[3], data[6]))
-    return new_data
-
-
-# declaring users
-users = fetch_users()
-
-username_table = {u.email: u for u in users}
-user_id_table = {u.id: u for u in users}
-
-
-def authenticate(username, password):
-    user = username_table.get(username, None)
-    if user and hmac.compare_digest(user.password.encode('utf-8'), password.encode('utf-8')):
-        return user
-
-
-def identity(number):
-    user_id = number['identity']
-    return user_id_table.get(user_id, None)
 
 
 app = Flask(__name__)
@@ -263,10 +214,6 @@ def register():
                                    (first_name, last_name, email, cell_num, id_num, password, pic, bio, username))
 
                     conn.commit()
-
-                    global users
-
-                    users = fetch_users()
 
                     # initialising flask mail
                     mail = Mail(app)
