@@ -173,7 +173,27 @@ app.config['MAIL_USE_SSL'] = True
 # date time variable
 now = datetime.now()
 
-jwt = JWT(app, authenticate, identity)
+
+@app.route('/user-login')
+def user_login():
+    response = {}
+
+    email = request.json["email"]
+    password = request.json["password"]
+
+    with sqlite3.connect("twitter.db") as conn:
+        conn.row_factory = dict_factory
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM users WHERE email=? AND password=?", (email, password,))
+        user = cursor.fetchone()
+
+        if user is not None:
+            response['message'] = "You have logged in"
+            response['status_code'] = 200
+        else:
+            response['message'] = "User not found"
+            response['status_code'] = 404
+    return response
 
 
 @app.route('/register', methods=['POST'])
@@ -337,6 +357,24 @@ def all_users(user_id):
 
         response['results'] = users
         response['message'] = "Successfully retrieved all users"
+        response['status_code'] = 201
+    return response
+
+
+@app.route('/users/<int:user_id>')
+def single_user(user_id):
+    response = {}
+
+    with sqlite3.connect('twitter.db') as conn:
+        conn.row_factory = dict_factory
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT * FROM users WHERE user_id = ?", (user_id,))
+
+        found_user = cursor.fetchone()
+
+        response['results'] = found_user
+        response['message'] = "Successfully retrieved user"
         response['status_code'] = 201
     return response
 
